@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, CreditCard, PiggyBank, Target } from 'lucide-react';
+import React from 'react';
+import { TrendingUp, TrendingDown, DollarSign, PiggyBank } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { StatCard } from '../components/dashboard/StatCard';
 import { ExpenseChart } from '../components/dashboard/ExpenseChart';
@@ -21,28 +21,49 @@ export const Dashboard: React.FC = () => {
     return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
   });
 
-  const totalIncome = currentMonthTransactions
+  const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalExpenses = currentMonthTransactions
+  const totalExpenses = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const balance = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? ((balance / totalIncome) * 100) : 0;
+  const cumulativeBalance = totalIncome - totalExpenses;
+
+  //current month toal
+  const currentMonthIncome = currentMonthTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const currentMonthExpenses = currentMonthTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const balance = currentMonthIncome - currentMonthExpenses;
+
+  <StatCard
+    title="Balance"
+    amount={balance}
+    icon={DollarSign}
+    color="blue"
+    index={4}
+  />
+
+  // Savings rate based on cumulative balance
+  const savingsRate = totalIncome > 0 ? ((cumulativeBalance / totalIncome) * 100) : 0;
 
   const categories = categoriesAPI.getDefault();
   const expensesByCategory = getCategoryBreakdown(currentMonthTransactions, 'expense')
-    .map(item => {
-      const category = categories.find(cat => cat.name === item.category);
-      return {
-        category: item.category,
-        amount: item.amount,
-        color: category?.color || '#6B7280',
-      };
-    })
-    .slice(0, 8); // Top 8 categories
+      .map(item => {
+        const category = categories.find(cat => cat.name === item.category);
+        return {
+          category: item.category,
+          amount: Number(item.amount),
+          color: category?.color || '#6B7280',
+        };
+      })
+    .slice(0, 8); //top 8 categories
 
   const recentTransactions = transactions.slice(0, 5);
   const monthlyData = getMonthlyData(transactions, 6);
@@ -88,35 +109,35 @@ export const Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Net Balance"
-          amount={balance}
-          icon={DollarSign}
-          color="emerald"
-          index={0}
-        />
-        <StatCard
-          title="Total Income"
-          amount={totalIncome}
-          icon={TrendingUp}
-          color="green"
-          index={1}
-        />
-        <StatCard
-          title="Total Expenses"
-          amount={totalExpenses}
-          icon={TrendingDown}
-          color="red"
-          index={2}
-        />
-        <StatCard
-          title="Savings Rate"
-          amount={`${savingsRate.toFixed(1)}%`}
-          icon={PiggyBank}
-          color="blue"
-          index={3}
-        />
-      </div>
+  <StatCard
+    title="Net Balance"
+    amount={cumulativeBalance}
+    icon={DollarSign}
+    color="emerald"
+    index={0}
+  />
+  <StatCard
+    title="Total Income (This Month)"
+    amount={currentMonthIncome}
+    icon={TrendingUp}
+    color="green"
+    index={1}
+  />
+  <StatCard
+    title="Total Expenses (This Month)"
+    amount={currentMonthExpenses}
+    icon={TrendingDown}
+    color="red"
+    index={2}
+  />
+  <StatCard
+    title="Savings Rate"
+    amount={`${savingsRate.toFixed(1)}%`}
+    icon={PiggyBank}
+    color="blue"
+    index={3}
+  />
+</div>
 
       {/* Charts and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

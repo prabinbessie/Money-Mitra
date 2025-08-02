@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { BarChart3, Download, Calendar, TrendingUp, TrendingDown, DollarSign, FileText, Plus } from 'lucide-react';
+import {
+  BarChart3,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  DollarSign,
+  Trash2,
+  Plus,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -7,63 +16,71 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { useReports } from '../hooks/useReports';
 import { formatCurrency, formatDate } from '../utils/calculations';
+import { toast } from 'react-hot-toast';
 
 export const Reports: React.FC = () => {
-  const { reports, loading, generateReport, deleteReport, getFinancialInsights } = useReports();
+  const {
+    reports,
+    loading,
+    generateReport,
+    deleteReport,
+    getFinancialInsights,
+  } = useReports();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reportType, setReportType] = useState<'monthly' | 'yearly' | 'custom'>('monthly');
-  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      .toISOString()
+      .split('T')[0]
+  );
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [generating, setGenerating] = useState(false);
 
   const insights = getFinancialInsights();
 
   const handleGenerateReport = async () => {
+    if (reportType === 'custom' && new Date(startDate) > new Date(endDate)) {
+      toast.error('Start date cannot be after end date');
+      return;
+    }
+
     setGenerating(true);
     await generateReport(reportType, startDate, endDate);
     setGenerating(false);
     setIsModalOpen(false);
+    toast.success('Report generated successfully!');
   };
 
   const handleDeleteReport = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this report?')) {
       await deleteReport(id);
+      toast.success('Report deleted');
     }
   };
 
   const exportReport = (report: any) => {
-    const reportData = {
-      title: `Financial Report - ${report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}`,
-      report_type: report.report_type,
-      period: `${formatDate(report.period_start)} - ${formatDate(report.period_end)}`,
-      total_income: report.total_income,
-      total_expenses: report.total_expenses,
-      net_savings: report.net_savings,
-      savings_rate: report.total_income > 0 ? ((report.net_savings / report.total_income) * 100).toFixed(1) + '%' : '0%',
-      top_categories: report.top_categories,
-      generated_at: formatDate(report.created_at),
-      currency: 'NPR'
-    };
+    const csvContent = [
+      `Financial Report - ${report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}`,
+      `Period: ${formatDate(report.period_start)} - ${formatDate(report.period_end)}`,
+      `Generated: ${formatDate(report.created_at)}`,
+      '',
+      'Summary:',
+      `Total Income: ${formatCurrency(report.total_income)}`,
+      `Total Expenses: ${formatCurrency(report.total_expenses)}`,
+      `Net Savings: ${formatCurrency(report.net_savings)}`,
+      `Savings Rate: ${report.total_income > 0 ? ((report.net_savings / report.total_income) * 100).toFixed(1) + '%' : '0%'}`,
+      '',
+    ];
 
-    // Create CSV format for better readability
-    let csvContent = `Financial Report - ${report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}\n`;
-    csvContent += `Period: ${reportData.period}\n`;
-    csvContent += `Generated: ${reportData.generated_at}\n\n`;
-    csvContent += `Summary:\n`;
-    csvContent += `Total Income: ${formatCurrency(report.total_income)}\n`;
-    csvContent += `Total Expenses: ${formatCurrency(report.total_expenses)}\n`;
-    csvContent += `Net Savings: ${formatCurrency(report.net_savings)}\n`;
-    csvContent += `Savings Rate: ${reportData.savings_rate}\n\n`;
-    
-    if (report.top_categories && report.top_categories.length > 0) {
-      csvContent += `Top Spending Categories:\n`;
-      csvContent += `Category,Amount,Percentage\n`;
+    if (report.top_categories?.length > 0) {
+      csvContent.push('Top Spending Categories:', 'Category,Amount,Percentage');
       report.top_categories.forEach((cat: any) => {
-        csvContent += `${cat.category},${formatCurrency(cat.amount)},${cat.percentage.toFixed(1)}%\n`;
+        csvContent.push(`${cat.category},${formatCurrency(cat.amount)},${cat.percentage.toFixed(1)}%`);
       });
     }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -81,14 +98,14 @@ export const Reports: React.FC = () => {
         <motion.div
           className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full"
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       </div>
     );
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -97,28 +114,14 @@ export const Reports: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <motion.h1 
-            className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
             Financial Reports
           </motion.h1>
-          <motion.p 
-            className="text-gray-600 mt-2"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
+          <motion.p className="text-gray-600 mt-2">
             Generate detailed financial reports and insights
           </motion.p>
         </div>
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
+        <motion.div>
           <Button onClick={() => setIsModalOpen(true)} size="lg" icon={<Plus className="h-5 w-5" />}>
             Generate Report
           </Button>
@@ -137,16 +140,15 @@ export const Reports: React.FC = () => {
               <motion.div
                 key={index}
                 className={`p-4 rounded-xl border-l-4 ${
-                  insight.type === 'success' 
-                    ? 'bg-green-50 border-green-500' 
+                  insight.type === 'success'
+                    ? 'bg-green-50 border-green-500'
                     : 'bg-yellow-50 border-yellow-500'
                 }`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
               >
                 <div className="flex items-start">
-                  <span className="text-2xl mr-3">{insight.icon}</span>
+                  <span className="text-2xl mr-3">
+                    {insight.type === 'success' ? <TrendingUp /> : <TrendingDown />}
+                  </span>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">{insight.title}</h4>
                     <p className="text-sm text-gray-600">{insight.message}</p>
@@ -177,10 +179,9 @@ export const Reports: React.FC = () => {
                         <BarChart3 className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900 capitalize">
-                          {report.report_type} Report
-                        </h3>
+                        <h3 className="font-semibold text-gray-900 capitalize">{report.report_type} Report</h3>
                         <p className="text-sm text-gray-600">
+                          <Calendar className="inline h-4 w-4 mr-1 text-gray-400" />
                           {formatDate(report.period_start)} - {formatDate(report.period_end)}
                         </p>
                       </div>
@@ -189,35 +190,40 @@ export const Reports: React.FC = () => {
 
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-center p-3 bg-green-50 rounded-lg flex flex-col items-center">
+                        <DollarSign className="text-green-600 mb-1" />
                         <p className="text-sm text-green-600">Income</p>
-                        <p className="font-semibold text-green-700">
-                          {formatCurrency(report.total_income)}
-                        </p>
+                        <p className="font-semibold text-green-700">{formatCurrency(report.total_income)}</p>
                       </div>
-                      <div className="text-center p-3 bg-red-50 rounded-lg">
+                      <div className="text-center p-3 bg-red-50 rounded-lg flex flex-col items-center">
+                        <DollarSign className="text-red-600 mb-1" />
                         <p className="text-sm text-red-600">Expenses</p>
-                        <p className="font-semibold text-red-700">
-                          {formatCurrency(report.total_expenses)}
-                        </p>
+                        <p className="font-semibold text-red-700">{formatCurrency(report.total_expenses)}</p>
                       </div>
                     </div>
 
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg flex flex-col items-center">
+                      {report.net_savings < 0 ? (
+                        <TrendingDown className="text-red-600 mb-1" />
+                      ) : (
+                        <TrendingUp className="text-blue-600 mb-1" />
+                      )}
                       <p className="text-sm text-blue-600">Net Savings</p>
-                      <p className={`font-semibold text-lg ${
-                        report.net_savings >= 0 ? 'text-blue-700' : 'text-red-700'
-                      }`}>
+                      <p
+                        className={`font-semibold text-lg ${
+                          report.net_savings >= 0 ? 'text-blue-700' : 'text-red-700'
+                        }`}
+                      >
                         {formatCurrency(report.net_savings)}
                       </p>
                     </div>
 
-                    {report.top_categories && report.top_categories.length > 0 && (
+                    {report.top_categories?.length > 0 && (
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-2">Top Spending Categories</p>
                         <div className="space-y-2">
                           {report.top_categories.slice(0, 3).map((category: any, idx: number) => (
-                            <div key={idx} className="flex justify-between items-center text-sm">
+                            <div key={idx} className="flex justify-between text-sm">
                               <span className="text-gray-600">{category.category}</span>
                               <span className="font-medium">{formatCurrency(category.amount)}</span>
                             </div>
@@ -245,7 +251,7 @@ export const Reports: React.FC = () => {
                           size="sm"
                           variant="danger"
                           onClick={() => handleDeleteReport(report.id)}
-                          icon={<FileText className="h-4 w-4" />}
+                          icon={<Trash2 className="h-4 w-4" />}
                         >
                           Delete
                         </Button>
@@ -264,7 +270,9 @@ export const Reports: React.FC = () => {
               <BarChart3 className="h-12 w-12 text-gray-400" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No reports generated yet</h3>
-            <p className="text-gray-600 mb-6">Create your first financial report to get insights into your spending</p>
+            <p className="text-gray-600 mb-6">
+              Create your first financial report to get insights into your spending
+            </p>
             <Button onClick={() => setIsModalOpen(true)} icon={<Plus className="h-4 w-4" />}>
               Generate Your First Report
             </Button>
@@ -285,7 +293,7 @@ export const Reports: React.FC = () => {
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value as any)}
-              className="block w-full rounded-xl border-2 border-gray-200 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-200 px-4 py-3"
+              className="block w-full rounded-xl border-2 border-gray-200 px-4 py-3"
             >
               <option value="monthly">Monthly Report</option>
               <option value="yearly">Yearly Report</option>
@@ -293,37 +301,45 @@ export const Reports: React.FC = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="date"
-              label="Start Date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-            <Input
-              type="date"
-              label="End Date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
+          {/* Show date pickers only if custom */}
+          {reportType === 'custom' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  Start Date
+                </label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  End Date
+                </label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4">
-            <Button 
-              onClick={handleGenerateReport} 
-              loading={generating} 
-              size="lg" 
+            <Button
+              onClick={handleGenerateReport}
+              loading={generating}
+              size="lg"
               fullWidth
               icon={<BarChart3 className="h-5 w-5" />}
             >
               Generate Report
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsModalOpen(false)} 
-              size="lg"
-            >
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} size="lg">
               Cancel
             </Button>
           </div>

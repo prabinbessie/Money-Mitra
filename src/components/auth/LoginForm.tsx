@@ -8,11 +8,6 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useApp } from '../../contexts/AppContext';
 
-const schema = yup.object({
-  email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-});
-
 interface LoginFormData {
   email: string;
   password: string;
@@ -21,6 +16,11 @@ interface LoginFormData {
 interface LoginFormProps {
   onToggleMode: () => void;
 }
+
+const schema = yup.object({
+  email: yup.string().email('Invalid email').required('Email is required'),
+  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+});
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -45,8 +45,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
       if (!result || result.error) {
         setError('email', { message: 'Invalid email or password' });
       }
-    } catch {
-      setError('email', { message: 'An unexpected error occurred' });
+    } catch (error) {
+      console.error('Sign-in error:', error);
+      setError('email', { message: 'An unexpected error occurred. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -57,10 +58,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
     try {
       const result = await signInWithGoogle();
       if (!result || result.error) {
-        setError('email', { message: 'Google sign-in failed' });
+        setError('email', { message: 'Google sign-in failed. Please try again.' });
       }
-    } catch {
-      setError('email', { message: 'Google sign-in failed' });
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      setError('email', { message: 'Google sign-in failed. Please try again.' });
     } finally {
       setGoogleLoading(false);
     }

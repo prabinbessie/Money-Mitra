@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Camera, Edit, Save, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
@@ -13,18 +13,40 @@ import { formatCurrency } from '../utils/calculations';
 
 const schema = yup.object({
   full_name: yup.string().required('Full name is required'),
-  phone: yup.string(),
-  date_of_birth: yup.string(),
-  occupation: yup.string(),
-  monthly_income: yup.number().min(0, 'Income cannot be negative'),
+  phone: yup.string().nullable().notRequired(),
+  date_of_birth: yup
+    .date()
+    .nullable()
+    .notRequired()
+    .max(new Date(), 'Date of birth cannot be in the future')
+    .test(
+      'is-18',
+      'You must be at least 18 years old',
+      (value) => {
+        if (!value) return true; // Skip validation if the field is empty
+        const today = new Date();
+        const eighteenYearsAgo = new Date(
+          today.getFullYear() - 18,
+          today.getMonth(),
+          today.getDate()
+        );
+        return value <= eighteenYearsAgo;
+      }
+    ),
+  occupation: yup.string().nullable().notRequired(),
+  monthly_income: yup
+    .number()
+    .min(0, 'Income cannot be negative')
+    .nullable()
+    .notRequired(),
 });
 
 interface ProfileFormData {
   full_name: string;
-  phone?: string;
-  date_of_birth?: string;
-  occupation?: string;
-  monthly_income?: number;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  occupation?: string | null;
+  monthly_income?: number | null;
 }
 
 export const Profile: React.FC = () => {
@@ -32,31 +54,47 @@ export const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ProfileFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ProfileFormData>({
     resolver: yupResolver(schema),
-    defaultValues: profile ? {
-      full_name: profile.full_name,
-      phone: profile.phone || '',
-      date_of_birth: profile.date_of_birth || '',
-      occupation: profile.occupation || '',
-      monthly_income: profile.monthly_income || 0,
-    } : {},
+    defaultValues: profile
+      ? {
+          full_name: profile.full_name,
+          phone: profile.phone ?? undefined,
+          date_of_birth: profile.date_of_birth ?? undefined,
+          occupation: profile.occupation ?? undefined,
+          monthly_income: profile.monthly_income ?? undefined,
+        }
+      : {},
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (profile) {
       reset({
         full_name: profile.full_name,
-        phone: profile.phone || '',
-        date_of_birth: profile.date_of_birth || '',
-        occupation: profile.occupation || '',
-        monthly_income: profile.monthly_income || 0,
+        phone: profile.phone ?? undefined,
+        date_of_birth: profile.date_of_birth ?? undefined,
+        occupation: profile.occupation ?? undefined,
+        monthly_income: profile.monthly_income ?? undefined,
       });
     }
   }, [profile, reset]);
 
   const onSubmit = async (data: ProfileFormData) => {
-    await updateProfile(data);
+    // sanitize null -> undefined for Partial<User>
+    const sanitizedData = {
+      full_name: data.full_name,
+      phone: data.phone ?? undefined,
+      date_of_birth: data.date_of_birth ?? undefined,
+      occupation: data.occupation ?? undefined,
+      monthly_income: data.monthly_income ?? undefined,
+    };
+
+    await updateProfile(sanitizedData);
     setIsEditing(false);
   };
 
@@ -80,14 +118,14 @@ export const Profile: React.FC = () => {
         <motion.div
           className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full"
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       </div>
     );
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -96,7 +134,7 @@ export const Profile: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <motion.h1 
+          <motion.h1
             className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -104,7 +142,7 @@ export const Profile: React.FC = () => {
           >
             Profile Management
           </motion.h1>
-          <motion.p 
+          <motion.p
             className="text-gray-600 mt-2"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -118,11 +156,12 @@ export const Profile: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <Button 
-            onClick={() => setIsEditing(!isEditing)} 
-            variant={isEditing ? "outline" : "primary"}
-            size="lg" 
+          <Button
+            onClick={() => setIsEditing(!isEditing)}
+            variant={isEditing ? 'outline' : 'primary'}
+            size="lg"
             icon={isEditing ? <X className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
+            aria-label={isEditing ? 'Cancel editing profile' : 'Edit profile'}
           >
             {isEditing ? 'Cancel' : 'Edit Profile'}
           </Button>
@@ -136,47 +175,49 @@ export const Profile: React.FC = () => {
             <div className="relative inline-block mb-6">
               <div className="w-32 h-32 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
                 {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Profile" 
+                  <img
+                    src={profile.avatar_url}
+                    alt="Profile avatar"
                     className="w-32 h-32 rounded-full object-cover"
                   />
                 ) : (
-                  <User className="h-16 w-16 text-white" />
+                  <User className="h-16 w-16 text-white" aria-hidden="true" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <label
+                htmlFor="avatar-upload"
+                className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                aria-label="Upload profile picture"
+              >
                 <Camera className="h-5 w-5 text-gray-600" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
               </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                disabled={uploading}
+              />
               {uploading && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
                   <motion.div
                     className="w-8 h-8 border-2 border-white border-t-transparent rounded-full"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    aria-label="Uploading avatar"
                   />
                 </div>
               )}
             </div>
-            
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {profile?.full_name || 'User'}
-            </h3>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">{profile?.full_name || 'User'}</h3>
             <p className="text-gray-600 mb-4">{profile?.email}</p>
-            
-            {profile?.monthly_income && (
+
+            {profile?.monthly_income !== undefined && profile?.monthly_income !== null && (
               <div className="bg-emerald-50 rounded-xl p-4">
                 <p className="text-emerald-600 text-sm font-medium">Monthly Income</p>
-                <p className="text-2xl font-bold text-emerald-700">
-                  {formatCurrency(profile.monthly_income)}
-                </p>
+                <p className="text-2xl font-bold text-emerald-700">{formatCurrency(profile.monthly_income)}</p>
               </div>
             )}
           </div>
@@ -185,8 +226,8 @@ export const Profile: React.FC = () => {
         {/* Profile Form */}
         <Card hover className="lg:col-span-2">
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Personal Information</h3>
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 {...register('full_name')}
@@ -194,8 +235,9 @@ export const Profile: React.FC = () => {
                 placeholder="Enter your full name"
                 error={errors.full_name?.message}
                 disabled={!isEditing}
+                required
               />
-              
+
               <Input
                 {...register('phone')}
                 label="Phone Number"
@@ -213,7 +255,7 @@ export const Profile: React.FC = () => {
                 error={errors.date_of_birth?.message}
                 disabled={!isEditing}
               />
-              
+
               <Input
                 {...register('occupation')}
                 label="Occupation"
@@ -235,16 +277,12 @@ export const Profile: React.FC = () => {
 
             {isEditing && (
               <div className="flex gap-4 pt-4">
-                <Button 
-                  type="submit" 
-                  size="lg"
-                  icon={<Save className="h-5 w-5" />}
-                >
+                <Button type="submit" size="lg" icon={<Save className="h-5 w-5" />}>
                   Save Changes
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditing(false)}
                   size="lg"
                 >
@@ -266,19 +304,19 @@ export const Profile: React.FC = () => {
               {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}
             </p>
           </div>
-          
+
           <div className="text-center p-4 bg-green-50 rounded-xl">
             <p className="text-green-600 text-sm font-medium">Profile Status</p>
             <p className="text-lg font-semibold text-green-700">Active</p>
           </div>
-          
+
           <div className="text-center p-4 bg-purple-50 rounded-xl">
             <p className="text-purple-600 text-sm font-medium">Last Updated</p>
             <p className="text-lg font-semibold text-purple-700">
               {profile?.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'N/A'}
             </p>
           </div>
-          
+
           <div className="text-center p-4 bg-orange-50 rounded-xl">
             <p className="text-orange-600 text-sm font-medium">Data Privacy</p>
             <p className="text-lg font-semibold text-orange-700">Secured</p>

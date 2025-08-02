@@ -53,52 +53,66 @@ export const Notifications: React.FC = () => {
       setLoading(false);
     }
   };
-
   const createSampleNotifications = async () => {
     if (!user) return;
-
-    const sampleNotifications = [
+  
+    const realisticNotifications = [
       {
         user_id: user.id,
-        title: 'Welcome to MoneyMitra! 🎉',
-        message: 'Your account has been successfully created. Start by adding your first transaction to track your finances.',
-        type: 'success' as const,
+        title: 'Monthly Budget Summary 📊',
+        message: 'Your monthly budget report is ready. You spent 75% of your allocated budget this month.',
+        type: 'info' as const,
         is_read: false,
       },
       {
         user_id: user.id,
-        title: 'Budget Alert 📊',
-        message: 'You have reached 80% of your monthly food budget. Consider reviewing your spending.',
+        title: 'High Spending Alert 🚨',
+        message: 'You spent ₹5,000 on dining this week, exceeding your weekly dining budget by 20%.',
         type: 'warning' as const,
         is_read: false,
       },
       {
         user_id: user.id,
-        title: 'Goal Achievement 🎯',
-        message: 'Congratulations! You have completed your Emergency Fund goal.',
+        title: 'Savings Milestone Achieved 🎉',
+        message: 'Congratulations! You have saved ₹50,000 towards your vacation goal.',
         type: 'success' as const,
         is_read: true,
       },
       {
         user_id: user.id,
-        title: 'Payment Reminder 💳',
-        message: 'Your loan EMI payment is due in 3 days. Amount: रू 15,000',
+        title: 'Payment Due Reminder 💳',
+        message: 'Your credit card bill of ₹12,000 is due in 2 days. Avoid late fees by paying on time.',
         type: 'info' as const,
         is_read: false,
       },
+      {
+        user_id: user.id,
+        title: 'Investment Update 📈',
+        message: 'Your mutual fund investment grew by 8% this quarter. Check your portfolio for details.',
+        type: 'success' as const,
+        is_read: false,
+      },
+      {
+        user_id: user.id,
+        title: 'Subscription Renewal Reminder 🔔',
+        message: 'Your Netflix subscription will renew on 15th October. Ensure sufficient balance in your account.',
+        type: 'info' as const,
+        is_read: false,
+      },
+      
     ];
-
+  
     // Check if notifications already exist to avoid duplicates
     const { data: existing } = await supabase
       .from('notifications')
       .select('id')
       .eq('user_id', user.id)
       .limit(1);
-
+  
     if (!existing || existing.length === 0) {
       await supabase
         .from('notifications')
-        .insert(sampleNotifications);
+        .insert(realisticNotifications);
       fetchNotifications();
     }
   };

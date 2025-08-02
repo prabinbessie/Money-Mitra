@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   CreditCard,
@@ -13,8 +13,10 @@ import {
   Settings,
   Bell,
   Wallet,
+  Menu,
+  X,
 } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext'; // Replace with useAuth if you're using that
+import { useApp } from '../../contexts/AppContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -34,17 +36,28 @@ const bottomNavigation = [
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { user, signOut, t = (s: string) => s, unreadCount = 0 } = useApp(); // fallback for t & unreadCount
+  const { user, signOut, t = (s: string) => s, unreadCount = 0 } = useApp();
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
+  const [isOpen, setIsOpen] = useState(false);
 
-  return (
+  const toggleSidebar = () => setIsOpen((prev) => !prev);
+
+  // Close on route change or ESC key
+  useEffect(() => {
+    setIsOpen(false);
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [location]);
+
+  const SidebarContent = (
     <motion.div
       className="flex flex-col w-64 bg-gradient-to-b from-gray-900 to-gray-800 shadow-2xl h-full"
       initial={{ x: -100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -100, opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
       {/* Logo */}
@@ -60,8 +73,8 @@ export const Sidebar: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      {/* Navigation */}
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {navigation.map((item, index) => {
           const isActive = location.pathname === item.href;
           return (
@@ -144,7 +157,7 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
         <motion.button
-          onClick={handleSignOut}
+          onClick={signOut}
           className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -154,5 +167,42 @@ export const Sidebar: React.FC = () => {
         </motion.button>
       </div>
     </motion.div>
+  );
+
+  return (
+    <>
+      {/* Mobile Toggle Button */}
+      <div className="sm:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={toggleSidebar}
+          className="bg-gray-800 text-white p-2 rounded-md shadow-md"
+        >
+          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Sidebar Drawer on Mobile */}
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-40 sm:hidden">
+            {/* Backdrop */}
+            <motion.div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setIsOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            {/* Drawer Sidebar */}
+            <div className="absolute inset-y-0 left-0 z-50">
+              {SidebarContent}
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Static Sidebar on Desktop */}
+      <div className="hidden sm:block">{SidebarContent}</div>
+    </>
   );
 };

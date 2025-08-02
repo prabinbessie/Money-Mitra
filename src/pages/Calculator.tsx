@@ -10,7 +10,7 @@ export const Calculator: React.FC = () => {
   const [principal, setPrincipal] = useState<number>(1000000);
   const [rate, setRate] = useState<number>(8.5);
   const [tenure, setTenure] = useState<number>(240);
-  const [showSchedule, setShowSchedule] = useState(false);
+  const [showSchedule, setShowSchedule] = useState<boolean>(false);
   const [calculatorType, setCalculatorType] = useState<'emi' | 'sip' | 'compound'>('emi');
 
   const emi = calculateEMI(principal, rate, tenure);
@@ -23,7 +23,7 @@ export const Calculator: React.FC = () => {
   const [sipTenure, setSipTenure] = useState<number>(120);
   const [sipRate, setSipRate] = useState<number>(12);
 
-  const calculateSIP = () => {
+  const calculateSIP = (): { maturityAmount: number; totalInvestment: number; totalReturns: number } => {
     const monthlyRate = sipRate / (12 * 100);
     const maturityAmount = sipAmount * (((Math.pow(1 + monthlyRate, sipTenure) - 1) / monthlyRate) * (1 + monthlyRate));
     const totalInvestment = sipAmount * sipTenure;
@@ -38,7 +38,7 @@ export const Calculator: React.FC = () => {
   const [compoundRate, setCompoundRate] = useState<number>(10);
   const [compoundTenure, setCompoundTenure] = useState<number>(10);
 
-  const calculateCompoundInterest = () => {
+  const calculateCompoundInterest = (): { amount: number; interest: number } => {
     const amount = compoundPrincipal * Math.pow(1 + compoundRate / 100, compoundTenure);
     const interest = amount - compoundPrincipal;
     return { amount, interest };

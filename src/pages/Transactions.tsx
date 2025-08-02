@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Download, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Download, Edit, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -105,6 +105,7 @@ export const Transactions: React.FC = () => {
           </div>
           <div className="flex gap-4">
             <select
+              aria-label="Filter transactions"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
               className="rounded-xl border-2 border-gray-200 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-200"
@@ -112,12 +113,12 @@ export const Transactions: React.FC = () => {
               <option value="all">All Types</option>
               <option value="income">💰 Income</option>
               <option value="expense">💸 Expense</option>
-            </select>
             <select
+              aria-label="Sort transactions"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="rounded-xl border-2 border-gray-200 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-200"
-            >
+            ></select> className="rounded-xl border-2 border-gray-200 shadow-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all duration-200"
               <option value="date">Sort by Date</option>
               <option value="amount">Sort by Amount</option>
             </select>
@@ -127,6 +128,7 @@ export const Transactions: React.FC = () => {
           </div>
         </div>
       </Card>
+
 
       {/* Transactions List */}
       <Card>
