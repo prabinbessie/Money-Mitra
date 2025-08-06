@@ -82,29 +82,60 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
 
   if (success) {
     return (
-      <motion.div 
-        className="text-center space-y-6"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-      >
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+          className="flex flex-col items-center justify-center min-h-[300px] bg-white shadow-lg rounded-lg p-8 space-y-6"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
         >
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1.2 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="flex items-center justify-center bg-green-100 rounded-full h-20 w-20"
+          >
+            <CheckCircle className="h-16 w-16 text-green-500" />
+          </motion.div>
+  
+          <div className="text-center">
+            <motion.h3
+              className="text-3xl font-bold text-gray-900 mb-2"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              Account Created!
+            </motion.h3>
+  
+            <motion.p
+              className="text-gray-700 text-base bg-yellow-50 border border-yellow-300 rounded-md px-6 py-3 font-medium shadow-sm ring-1 ring-yellow-200"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              Welcome to <strong className="text-yellow-900">MoneyMitra</strong>! Please check your email to confirm your account before signing in.
+            </motion.p>
+          </div>
+  
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="w-full"
+          >
+            <Button
+              onClick={onToggleMode}
+              size="lg"
+              fullWidth
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-lg"
+            >
+              Go to Sign In
+            </Button>
+          </motion.div>
         </motion.div>
-        <div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h3>
-          <p className="text-gray-600">Welcome to MoneyMitra! You can now sign in to your account.</p>
-        </div>
-        <Button onClick={onToggleMode} size="lg" fullWidth>
-          Go to Sign In
-        </Button>
-      </motion.div>
     );
   }
+  
 
   return (
     <motion.div
